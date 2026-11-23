@@ -6,8 +6,8 @@ Built with Node.js, Express 5, and MongoDB, the API provides secure authenticati
 
 ## Repositories
 
-- **Frontend:** [Taskflow Frontend](https://github.com/YOUR_USERNAME/taskflow-frontend)
-- **Backend:** [Taskflow Backend](https://github.com/YOUR_USERNAME/taskflow-backend)
+- **Frontend:** [Taskflow Frontend](https://github.com/saadmalik4058/taskflow-frontend)
+- **Backend:** [Taskflow Backend](https://github.com/saadmalik4058/taskflow-backend)
 
 ## Features
 
