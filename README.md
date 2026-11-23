@@ -1,338 +1,333 @@
-# TaskFlow API
+# Taskflow – Backend API
 
-A REST API for managing projects and tasks, built with Node.js, Express 5 and MongoDB.
-It provides token-based authentication, per-user data isolation, input validation,
-rate limiting and a full integration test suite.
+A RESTful backend API for **Taskflow**, a modern task management application designed for freelancers, developers, students, and small teams.
 
----
+Built with Node.js, Express 5, and MongoDB, the API provides secure authentication, project and task management, role-based authorization, data validation, and comprehensive integration testing.
 
-## Tech stack
+## Repositories
 
-| Layer | Choice |
+- **Frontend:** [Taskflow Frontend](https://github.com/YOUR_USERNAME/taskflow-frontend)
+- **Backend:** [Taskflow Backend](https://github.com/YOUR_USERNAME/taskflow-backend)
+
+## Features
+
+- JWT-based authentication and protected routes
+- Password hashing with bcrypt
+- Role-based authorization (User / Admin)
+- Project and task CRUD operations
+- Per-user data isolation and resource ownership checks
+- Task filtering, searching, sorting, and pagination
+- Input validation using Zod
+- Centralized error handling
+- API rate limiting and security headers
+- MongoDB integration using Mongoose
+- Integration testing with Jest and Supertest
+
+## Tech Stack
+
+| Category | Technology |
 |---|---|
-| Runtime | Node.js (CommonJS) |
-| Web framework | Express 5 |
-| Database | MongoDB with Mongoose 9 |
+| Runtime | Node.js |
+| Framework | Express 5 |
+| Database | MongoDB |
+| ODM | Mongoose 9 |
 | Validation | Zod 4 |
-| Auth | JSON Web Tokens (`jsonwebtoken`) + `bcrypt` password hashing |
-| Security | `helmet`, `cors`, `express-rate-limit` |
-| Testing | Jest + Supertest + `mongodb-memory-server` |
-
----
+| Authentication | JWT |
+| Password Hashing | bcrypt |
+| Security | Helmet, CORS, Express Rate Limit |
+| Testing | Jest, Supertest, MongoDB Memory Server |
 
 ## Requirements
 
-- **Node.js 18 or newer** (developed on Node 24)
-- **MongoDB** running locally, or a connection string to a hosted cluster
+- Node.js 18 or newer
+- MongoDB (local instance or hosted cluster)
 
-You do **not** need MongoDB installed to run the tests — the test suite starts its
-own throwaway in-memory database.
+**Note:** MongoDB does not need to be installed locally to run the test suite. Tests use MongoDB Memory Server.
 
----
+## Getting Started
 
-## Getting started
+### 1. Clone the repository
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/YOUR_USERNAME/taskflow-backend.git
+```
+
+### 2. Navigate to the project directory
+
+```bash
+cd taskflow-backend
+```
+
+### 3. Install dependencies
+
+```bash
 npm install
+```
 
-# 2. Create your environment file from the template
-cp .env.example .env        # Windows: copy .env.example .env
+### 4. Configure environment variables
 
-# 3. Open .env and set MONGO_URI and JWT_SECRET
-#    Generate a strong secret with:
-#    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+Create your environment file:
 
-# 4. Start the development server (auto-restarts on file changes)
+```bash
+cp .env.example .env
+```
+
+For Windows:
+
+```bash
+copy .env.example .env
+```
+
+Open `.env` and configure the required variables:
+
+```env
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret_key
+PORT=3000
+NODE_ENV=development
+```
+
+Generate a secure JWT secret:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 5. Start the development server
+
+```bash
 npm run dev
 ```
 
-The API is then available at `http://localhost:3000`.
+The API will be available at:
 
----
+`http://localhost:3000`
 
-## Available scripts
+## Available Scripts
 
-| Script | What it does |
+| Command | Description |
 |---|---|
-| `npm start` | Runs the server once (`node src/server.js`). Used in production. |
-| `npm run dev` | Runs the server with `nodemon`, restarting on changes. |
-| `npm test` | Runs the full Jest test suite once. |
-| `npm run test:watch` | Runs Jest in watch mode. |
+| `npm start` | Start the production server |
+| `npm run dev` | Start the development server with Nodemon |
+| `npm test` | Run the complete integration test suite |
+| `npm run test:watch` | Run tests in watch mode |
 
----
-
-## Environment variables
-
-Copy `.env.example` to `.env`. Only two variables are genuinely required.
+## Environment Variables
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `MONGO_URI` | **yes** | – | MongoDB connection string. |
-| `JWT_SECRET` | **yes** | – | Secret used to sign tokens. Changing it invalidates all existing tokens. |
-| `PORT` | no | `3000` | Port the API listens on. |
-| `NODE_ENV` | no | `development` | `development`, `test` or `production`. |
-| `CLIENT_URLS` | no | Local dev origins | Comma-separated CORS allow-list, e.g. `https://taskflow.vercel.app`. Use `*` to allow all (testing only). |
-| `RATE_LIMIT_WINDOW_MS` | no | `900000` | Rate-limit window in milliseconds (15 minutes). |
-| `RATE_LIMIT_MAX` | no | `500` | Max requests per window, all routes. |
-| `AUTH_RATE_LIMIT_MAX` | no | `20` | Max **failed** requests per window for `/register` and `/login`. Successful logins cost nothing. |
+| `MONGO_URI` | Yes | – | MongoDB connection string |
+| `JWT_SECRET` | Yes | – | Secret used to sign JWT tokens |
+| `PORT` | No | `3000` | Server port |
+| `NODE_ENV` | No | `development` | Application environment |
+| `CLIENT_URLS` | No | Local origins | Allowed CORS origins |
+| `RATE_LIMIT_WINDOW_MS` | No | `900000` | Rate-limit window |
+| `RATE_LIMIT_MAX` | No | `500` | Maximum requests per window |
+| `AUTH_RATE_LIMIT_MAX` | No | `20` | Maximum failed authentication requests per window |
 
-`.env` is git-ignored. `.env.example` is the committed, secret-free template.
+`.env` is excluded from Git. Use `.env.example` as the configuration template.
 
----
-
-## API reference
+## API Reference
 
 **Base URL:** `http://localhost:3000`
 
 ### Authentication
 
-Protected endpoints expect a Bearer token:
+Protected endpoints require a Bearer token:
 
-```
+```http
 Authorization: Bearer <token>
 ```
 
-Get a token from `POST /login`. Tokens expire after **1 hour**. The payload is
-`{ id, username, role }`.
+Obtain a token through `POST /login`.
 
-Roles are `user` and `admin`. A new account is always `user` — the `role` field is
-stripped from `POST /register`, so nobody can promote themselves.
+- Token expiration: 1 hour
+- Supported roles: `user`, `admin`
+- New accounts receive the `user` role by default.
+- Users cannot assign themselves an admin role during registration.
 
-### Response format
+### Authentication Endpoints
 
-Endpoints return JSON. List endpoints return their own wrapper rather than a
-generic envelope; for example `GET /projects` returns `{ "projects": [...] }` and
-`GET /tasks` returns pagination fields alongside `tasks`.
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/register` | Public | Register a new account |
+| POST | `/login` | Public | Authenticate and receive a JWT |
+| GET | `/profile` | User | Get authenticated user information |
+| GET | `/users` | Admin | List all users (passwords excluded) |
 
-### Errors
+### Project Endpoints
 
-Every failed request includes a human-readable `message`:
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/projects` | User | Create a project |
+| GET | `/projects` | User | Get your projects |
+| GET | `/projects/:id` | Owner | Get a specific project |
+| PUT | `/projects/:id` | Owner | Update project details |
+| DELETE | `/projects/:id` | Owner | Delete a project and its associated tasks |
 
-```json
-{
-  "success": false,
-  "message": "Validation failed",
-  "errors": [
-    { "field": "password", "message": "Password must be at least 8 characters long" }
-  ]
-}
+### Task Endpoints
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| POST | `/tasks` | Project Owner | Create a task |
+| GET | `/tasks` | User | Get your tasks |
+| GET | `/tasks/:id` | Owner | Get a specific task |
+| PUT | `/tasks/:id` | Owner | Update a task |
+| DELETE | `/tasks/:id` | Owner | Delete a task |
+
+### Task Filtering, Searching & Pagination
+
+The `GET /tasks` endpoint supports the following query parameters:
+
+| Parameter | Description | Default |
+|---|---|---|
+| `status` | Filter by `pending`, `in-progress`, or `completed` | – |
+| `priority` | Filter by `low`, `medium`, or `high` | – |
+| `search` | Search task titles and descriptions | – |
+| `page` | Page number (minimum 1) | `1` |
+| `limit` | Results per page (1–100) | `10` |
+| `sortBy` | Sort by `createdAt`, `updatedAt`, `title`, `dueDate`, or `priority` | `createdAt` |
+| `order` | Sort order: `asc` or `desc` | `desc` |
+
+**Example request:**
+
+```http
+GET /tasks?status=pending&priority=high&search=landing&page=1&limit=10
 ```
 
-Validation failures (400) and unexpected errors carry `success: false` and, for
-validation, a per-field `errors` array. Business errors returned directly by a
-controller (401, 403, 404 such as `"Project not found"`) contain `message` only.
+## Example API Requests
 
-| Status | Meaning |
-|---|---|
-| 200 | Success |
-| 201 | Created |
-| 400 | Validation failed / bad input |
-| 401 | Missing, invalid or expired token |
-| 403 | Authenticated but not allowed |
-| 404 | Resource not found |
-| 413 | Request body too large |
-| 429 | Rate limit exceeded |
-| 500 | Unexpected server error |
-
-### Endpoints
-
-**Auth**
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/register` | – | Create an account. |
-| `POST` | `/login` | – | Exchange credentials for a token. |
-| `GET` | `/profile` | user | Return the decoded token payload. |
-| `GET` | `/users` | **admin** | List all users (passwords excluded). |
-
-**Projects**
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/projects` | user | Create a project. |
-| `GET` | `/projects` | user | List your projects. |
-| `GET` | `/projects/:id` | owner | Get one project. |
-| `PUT` | `/projects/:id` | owner | Update `name` and/or `description`. |
-| `DELETE` | `/projects/:id` | owner | Delete a project **and all of its tasks**. |
-
-**Tasks**
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/tasks` | owner of `project` | Create a task. |
-| `GET` | `/tasks` | user | List your tasks (filter, search, sort, paginate). |
-| `GET` | `/tasks/:id` | owner | Get one task. |
-| `PUT` | `/tasks/:id` | owner | Update a task. |
-| `DELETE` | `/tasks/:id` | owner | Delete a task. |
-
-#### Query parameters for `GET /tasks`
-
-| Parameter | Type | Default | Notes |
-|---|---|---|---|
-| `status` | enum | – | `pending`, `in-progress`, `completed` |
-| `priority` | enum | – | `low`, `medium`, `high` |
-| `search` | string | – | Case-insensitive match on title and description. Regex characters are treated as plain text. |
-| `page` | integer | `1` | Must be 1 or greater. |
-| `limit` | integer | `10` | 1–100. |
-| `sortBy` | enum | `createdAt` | `createdAt`, `updatedAt`, `title`, `dueDate`, `priority` |
-| `order` | enum | `desc` | `asc` or `desc` |
-
-#### Field notes
-
-- Task `status` defaults to `pending`; `priority` defaults to `medium`.
-- `assignedTo` accepts a user id, or `null` on update to **unassign**.
-- A task cannot be moved to a different project after creation.
-- Unknown fields are silently stripped (mass-assignment protection), so a client
-  can never set `createdBy` or `role`.
-
-### Examples
-
-**Register**
+### Register a User
 
 ```http
 POST /register
 Content-Type: application/json
-
-{ "username": "saad", "email": "saad@example.com", "password": "password123" }
 ```
 
 ```json
 {
-  "message": "User registered successfully",
-  "user": { "id": "6650...", "username": "saad", "email": "saad@example.com", "role": "user" }
+  "username": "saad",
+  "email": "saad@example.com",
+  "password": "password123"
 }
 ```
 
-**Login**
+### Login
 
 ```http
 POST /login
 Content-Type: application/json
-
-{ "email": "saad@example.com", "password": "password123" }
 ```
 
 ```json
-{ "message": "Login successful", "token": "eyJhbGciOi..." }
+{
+  "email": "saad@example.com",
+  "password": "password123"
+}
 ```
 
-**Create a project**
+### Create a Project
 
 ```http
 POST /projects
 Authorization: Bearer <token>
 Content-Type: application/json
-
-{ "name": "Website redesign", "description": "Q3 work" }
 ```
 
-**Create a task**
+```json
+{
+  "name": "Website Redesign",
+  "description": "Q3 project"
+}
+```
+
+### Create a Task
 
 ```http
 POST /tasks
 Authorization: Bearer <token>
 Content-Type: application/json
+```
 
+```json
 {
   "title": "Design the landing page",
-  "project": "<project id>",
+  "project": "<project-id>",
   "priority": "high",
   "dueDate": "2026-11-30"
 }
 ```
 
-**List tasks**
-
-```http
-GET /tasks?status=pending&search=landing&sortBy=dueDate&order=asc&page=1&limit=10
-Authorization: Bearer <token>
-```
-
-```json
-{
-  "totalTasks": 1,
-  "currentPage": 1,
-  "totalPages": 1,
-  "pageSize": 10,
-  "tasks": [ { "_id": "...", "title": "Design the landing page", "status": "pending" } ]
-}
-```
-
----
-
 ## Testing
+
+The backend includes **83 integration tests** covering:
+
+- Authentication and authorization
+- User and resource ownership
+- Project and task CRUD operations
+- Input validation
+- Pagination
+- Cascade deletion
+
+Run the test suite:
 
 ```bash
 npm test
 ```
 
-83 integration tests cover authentication, authorization, ownership, project and
-task CRUD, validation, pagination and cascade deletion.
+Testing uses Jest, Supertest, and MongoDB Memory Server.
 
-The suite uses `mongodb-memory-server`, which starts a real MongoDB instance on a
-random port with a temporary data directory. Two consequences worth knowing:
+Each test file gets an isolated temporary database, ensuring that tests do not interfere with your development database.
 
-- Your development database is never touched, and no local MongoDB is required.
-- Every test file gets a clean database, so tests never interfere with each other.
+## Project Structure
 
-Rate limiters are disabled automatically when `NODE_ENV=test`, because a suite
-that deliberately sends dozens of failing requests would otherwise trip the
-20-attempt auth limit. The limiters themselves are verified manually.
-
----
-
-## Project structure
-
-```
+```text
 src/
-  app.js                  Express app (middleware + route wiring), exported for tests
-  server.js               Entry point: loads .env, connects to MongoDB, listens
-  config/
-    cors.js               CORS allow-list, driven by CLIENT_URLS
-    database.js           Mongoose connection
-  controllers/            Request handlers (no try/catch - Express 5 forwards errors)
-  middleware/
-    auth.js               Verifies the Bearer token, attaches req.user
-    authorize.js          Role check, e.g. authorize("admin")
-    validate.js           Runs a Zod schema against body / params / query
-    errorHandler.js       notFound (404) and the final error handler
-    rateLimiters.js       generalLimiter + authLimiter
-  models/                 Mongoose schemas (User, Project, Task)
-  routes/                 Route definitions
-  utils/generateToken.js  Signs a JWT for a user
-  validators/             Zod schemas and shared field rules
+├── app.js
+├── server.js
+├── config/
+│   ├── cors.js
+│   └── database.js
+├── controllers/
+├── middleware/
+│   ├── auth.js
+│   ├── authorize.js
+│   ├── validate.js
+│   ├── errorHandler.js
+│   └── rateLimiters.js
+├── models/
+├── routes/
+├── utils/
+│   └── generateToken.js
+└── validators/
+
 tests/
-  setupEnv.js             Test-only environment variables
-  setupDb.js              In-memory MongoDB lifecycle
-  helpers/index.js        register / login / createProject / createTask helpers
-  *.test.js               One file per area
+├── setupEnv.js
+├── setupDb.js
+├── helpers/
+└── *.test.js
 ```
 
----
+## Security
 
-## Security notes
+- Passwords are hashed using bcrypt.
+- JWT authentication protects private endpoints.
+- Role-based authorization restricts administrative operations.
+- Resource ownership checks prevent unauthorized access to other users' projects and tasks.
+- Helmet adds security-related HTTP headers.
+- Rate limiting protects API endpoints against excessive requests.
+- Zod validates incoming request data.
+- Mass-assignment protection prevents clients from modifying restricted fields.
+- Search input is escaped to prevent regex pattern injection.
 
-- Passwords are hashed with `bcrypt` (cost 10) and never returned by any endpoint.
-- `POST /register` strips `role`, so accounts cannot self-promote to admin.
-- Login returns the same message for an unknown email and a wrong password, which
-  prevents account enumeration.
-- `helmet` sets protective headers and removes `X-Powered-By`.
-- Search input is regex-escaped, so a query cannot inject a pattern.
-- Rate limiting is applied globally and more strictly to authentication routes.
-- Ownership is checked on every project and task operation, so authenticated users
-  cannot read or modify each other's data.
+## Known Limitations
 
----
+- Tasks assigned by other users are not included in the current user's task listing.
+- Project and user listing endpoints do not currently support pagination.
+- Profile information is derived from the JWT payload.
+- Refresh tokens and a logout endpoint are not implemented.
+- Role changes do not affect previously issued tokens until they expire.
 
-## Known limitations
+## License
 
-- `GET /tasks` returns only tasks you **created**. A task assigned to you by
-  someone else is not listed (and reading it directly returns 403). This is a
-  data-model decision that is still open.
-- `GET /projects` and `GET /users` return all rows with no pagination.
-- `GET /profile` echoes the token payload rather than reading the user from the
-  database, so it can be stale until the token expires.
-- There is no refresh token or logout endpoint; tokens simply expire after 1 hour.
-- Roles live inside the token, so changing a user's role does not affect tokens
-  that were already issued.
+This project is developed for learning and portfolio purposes.
